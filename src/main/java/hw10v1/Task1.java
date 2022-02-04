@@ -17,7 +17,6 @@ public class Task1 {
                 .filter(p -> p.getKey() % 2 != 0) // нужен нечетный ключ
                 .peek(name -> result.append(name.getKey()).append(". ").append(name.getValue()).append(", "))
                 .collect(Collectors.toList());
-        //System.out.println(collect);
         return result.substring(0, result.length()-2); // удаляя последнюю запятую и пробел
     }
 
