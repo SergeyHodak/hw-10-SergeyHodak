@@ -1,11 +1,13 @@
 package hw10v1;
 
 import java.util.Arrays;
+import java.util.Optional;
 import java.util.stream.Stream;
 
 public class Task2 {
     public String[] reverseSortByUpperCase(String[] data) {
-        Stream<String> result = Stream.of(data)
+        Optional<String[]> dats = Optional.of(data); // обертка в опшн
+        Stream<String> result = Stream.of(dats.get()) // стрим берущий по одному объекту
                 .sorted((s1, anotherString) -> anotherString.compareTo(s1)) // реверсная сортировка
                 .map(String::toUpperCase); // возвести в верхний регистр
 
@@ -13,9 +15,9 @@ public class Task2 {
     }
 
     public static void main(String[] args) {
-        Task2 test = new Task2();
-        String[] names = new String[]{"Ken", "Mari", "Bill", "Mark", "Steve", "Jo", "Le"};
-        String[] result = test.reverseSortByUpperCase(names);
-        System.out.println(Arrays.toString(result));
+        Task2 test = new Task2(); // экземпляр класса
+        String[] names = new String[]{"Ken", "Mari", "Bill", "Mark", "Steve", "Jo", "Le"}; // входной массив
+        String[] result = test.reverseSortByUpperCase(names); // вызов метода
+        System.out.println(Arrays.toString(result)); // печать в консоль результата работы метода
     }
 }
