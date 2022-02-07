@@ -1,7 +1,6 @@
 package hw10v1;
 
 import java.util.*;
-import java.util.stream.Collectors;
 
 public class Task1 {
     public String oddNames(String[] data) {
@@ -15,8 +14,7 @@ public class Task1 {
         dataOptional.get().entrySet()
                 .stream()
                 .filter(p -> p.getKey() % 2 != 0) // нужен нечетный ключ
-                .peek(name -> result.append(name.getKey()).append(". ").append(name.getValue()).append(", "))
-                .collect(Collectors.toList());
+                .forEach(name -> result.append(name.getKey()).append(". ").append(name.getValue()).append(", "));
         return result.substring(0, result.length()-2); // удаляя последнюю запятую и пробел
     }
 
