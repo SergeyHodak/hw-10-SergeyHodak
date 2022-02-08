@@ -1,7 +1,6 @@
 package lectureNotes;
 
 import java.io.File;
-import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.nio.file.Files;
@@ -1651,8 +1650,133 @@ class Test60 {
     работу со stream'ом.
 
     2.1 Краткое описание конвейерных методов работы со стримами#
-    ------------------------------------------------------------
-    Метод stream | Описание | Пример
-    ------------------------------------------------------------
-
+        ------------------------------------------------------------
+        Метод stream | Описание | Пример
+        ------------------------------------------------------------
+        filter | Отфильтровывает записи, возвращает только записи, соответствующие условию |
+        */
+        class Test71 {
+            public static void main(String[] args) {
+                Stream<String> streamFromValues = Stream.of("a1", "a2", "a3", "a1");
+                System.out.println(streamFromValues
+                        .filter("a1"::equals)
+                        .count()); // сколько в массиве таких вхождений
+            }
+        }
+        /*
+        ------------------------------------------------------------
+        skip | Позволяет пропустить N первых элементов |
+        */
+        class Test72 {
+            public static void main(String[] args) {
+                List<String> collection = Arrays.asList("a0", "a1","a2","a3", "a4");
+                String s = collection
+                        .stream()
+                        .skip(collection.size() - 1) // пропустить размер массива -1
+                        .findFirst() // взять первый
+                        .orElse("1"); // если такого нету вернуть "1"
+                System.out.println(s);
+            }
+        }
+        /*
+        ------------------------------------------------------------
+        distinct | Возвращает стрим без дубликатов (для метода equals) |
+        */
+        class Test73 {
+            public static void main(String[] args) {
+                List<String> collection = Arrays.asList("a0", "a1","a2","a3", "a4", "a3");
+                List<String> collect = collection.
+                        stream().
+                        distinct().
+                        collect(Collectors.toList());
+                System.out.println(collect);
+            }
+        }
+        /*
+        ------------------------------------------------------------
+        map | Преобразует каждый элемент стрима |
+        */class Test74 {
+            public static void main(String[] args) {
+                List<String> collection = Arrays.asList("a0", "a1","a2","a3", "a4", "a3");
+                List<String> collect = collection
+                        .stream()
+                        .map((s) -> s + "_1")
+                        .collect(Collectors.toList());
+                System.out.println(collect);
+            }
+        }
+        /*
+        ------------------------------------------------------------
+        peek | Возвращает тот же стрим, но применяет функцию к каждому элементу стрима
+        */
+        class Test75 {
+            public static void main(String[] args) {
+                List<String> collection = Arrays.asList("a0", "a1","a2","a3", "a4", "a3");
+                List<String> collect = collection
+                        .stream()
+                        .map(String::toUpperCase)
+                        .peek((e) -> System.out.print("," + e))
+                        .collect(Collectors.toList());
+                System.out.println("\n" + collect);
+            }
+        }
+        /*
+        ------------------------------------------------------------
+        limit | Позволяет ограничить выборку определенным количеством первых элементов |
+        */
+        class Test76 {
+            public static void main(String[] args) {
+                List<String> collection = Arrays.asList("a0", "a1","a2","a3", "a4", "a3");
+                List<String> collect = collection
+                        .stream()
+                        .limit(2)
+                        .collect(Collectors.toList());
+                System.out.println(collect);
+            }
+        }
+        /*
+        ------------------------------------------------------------
+        sorted | Позволяет сортировать значения либо в натуральном порядке, либо задавая Comparator |
+        */
+        class Test77 {
+            public static void main(String[] args) {
+                List<String> collection = Arrays.asList("a0", "a1","a2","a3", "a4", "a3");
+                List<String> collect = collection
+                        .stream()
+                        .sorted()
+                        .collect(Collectors.toList());
+                System.out.println(collect);
+            }
+        }
+        /*
+        ------------------------------------------------------------
+        mapToInt, mapToDouble, mapToLong |
+        Аналог map, но возвращает числовой стрим (то есть стрим из числовых примитивов) |
+        */
+        class Test78 {
+            public static void main(String[] args) {
+                List<String> collection = List.of("1", "2", "4", "200", "0", "79");
+                int[] ints = collection
+                        .stream()
+                        .mapToInt((s) -> Integer.parseInt(s))
+                        .toArray();
+                System.out.println(Arrays.toString(ints));
+            }
+        }
+        /*
+        ------------------------------------------------------------
+        flatMap, flatMapToInt, flatMapToDouble, flatMapToLong |
+        Похоже на map, но может создавать из одного элемента несколько
+        */
+        class Test79 {
+            public static void main(String[] args) {
+                List<String> collection = List.of("1", "2, 676", "4", "200, 45", "0", "79");
+                String[] strings = collection
+                        .stream()
+                        .flatMap((p) -> Arrays.stream(p.split(",")))
+                        .toArray(String[]::new);
+                System.out.println(Arrays.toString(strings));
+            }
+        }
+        /*
  */
