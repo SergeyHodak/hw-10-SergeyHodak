@@ -1,5 +1,11 @@
 package lectureNotes;
 
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.IOException;
+import java.io.PrintWriter;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.util.*;
 import java.util.concurrent.ForkJoinPool;
 import java.util.function.Supplier;
@@ -1362,3 +1368,291 @@ class SpeedStatistic { //03.02.2022 Анна Гой, были проблемы �
         System.out.println(Arrays.toString(getSpeedStatistic(new int[]{20, 30, 40, 5, 1000, 1})));
     }
 }
+
+/*
+    TODO вторая статья https://habr.com/ru/company/luxoft/blog/270383/
+    vedenin1980 18 ноября 2015 в 15:43
+
+    Шпаргалка Java программиста 4. Java Stream API#
+    Несмотря на то, что Java 8 вышла уже достаточно давно, далеко не все программисты используют её новые возможности,
+    кого-то останавливает то, что рабочие проекты слишком сложно перевести с Java 7 или даже Java 6, кого-то
+    использование в своих проектах GWT, кто-то делает проекты под Android и не хочет или не может использовать
+    сторонние библиотеки для реализации лямбд и Stream Api. Однако знание лямбд и Stream Api для программиста Java
+    зачастую требуют на собеседованиях, ну и просто будет полезно при переходе на проект где используется Java 8. Я
+    хотел бы предложить вам краткую шпаргалку по Stream Api с практическими примерами реализации различных задач с
+    новым функциональным подходом. Знания лямбд и функционального программирования не потребуется (я постарался дать
+    примеры так, чтобы все было понятно), уровень от самого базового знания Java и выше.
+
+    Также, так как это шпаргалка, статья может использоваться, чтобы быстро вспомнить как работает та или иная
+    особенность Java Stream Api. Краткое перечисление возможностей основных функций дано в начале статьи.
+
+    Для тех кто совсем не знает что такое Stream Api#
+    Stream API это новый способ работать со структурами данных в функциональном стиле. Чаще всего с помощью stream в
+    Java 8 работают с коллекциями, но на самом деле этот механизм может использоваться для самых различных данных.
+
+    Stream Api позволяет писать обработку структур данных в стиле SQL, то если раньше задача получить сумму всех
+    нечетных чисел из коллекции решалась следующим кодом:
+    */
+class Test58 {
+    public static void main(String[] args) {
+        Integer sumOddOld = 0;
+        Integer[] collection = new Integer[] {0, 2, 1, 5};
+        for(Integer i: collection) {
+            if(i % 2 != 0) {
+                sumOddOld += i;
+            }
+        }
+        System.out.println(sumOddOld);
+    }
+}
+    /*
+    То с помощью Stream Api можно решить такую задачу в функциональном стиле:
+    */
+class Test59 {
+    public static void main(String[] args) {
+        List<Integer> collection = Arrays.asList(0, 2, 1, 5);
+        Integer sumOdd = collection.stream()
+                .filter(o -> o % 2 != 0)
+                .reduce((s1, s2) -> s1 + s2)
+                .orElse(0);
+        System.out.println(sumOdd);
+    }
+}
+    /*
+    Более того, Stream Api позволяет решать задачу параллельно лишь изменив stream() на parallelStream() без всякого
+    лишнего кода, т.е.
+    */
+class Test60 {
+    public static void main(String[] args) {
+        List<Integer> collection = Arrays.asList(0, 2, 1, 5);
+        Integer sumOdd = collection.parallelStream()
+                .filter(o -> o % 2 != 0)
+                .reduce((s1, s2) -> s1 + s2)
+                .orElse(0);
+        System.out.println(sumOdd);
+    }
+}
+    /*
+    Уже делает код параллельным, без всяких семафоров, синхронизаций, рисков взаимных блокировок и т.п.
+    Давайте начнем с начала, а именно с создания объектов stream в Java 8.
+
+    I. Способы создания стримов#
+    Перечислим несколько способов создать стрим
+        _________________________________________________
+        Способ создания стрима | Шаблон создания | Пример
+        _________________________________________________
+        1. Классический: Создание стрима из коллекции. | collection.stream() |
+        */
+        class Test61 {
+            public static void main(String[] args) {
+                Collection<String> collection = Arrays.asList("a1", "a2", "a3");
+                Stream<String> streamFromCollection = collection.stream();
+                //System.out.println(Arrays.toString(streamFromCollection.toArray()));
+            }
+        }
+        /*
+        _________________________________________________
+        2. Создание стрима из значений. | Stream.of(значение1,… значениеN) |
+        */
+        class Test62 {
+            public static void main(String[] args) {
+                Stream<String> streamFromValues = Stream.of("a1", "a2", "a3");
+                //System.out.println(Arrays.toString(streamFromValues.toArray()));
+            }
+        }
+        /*
+        _________________________________________________
+        3. Создание стрима из массива. | Arrays.stream(массив) |
+        */
+        class Test63 {
+            public static void main(String[] args) {
+                String[] array = {"a1","a2","a3"};
+                Stream<String> streamFromArrays = Arrays.stream(array);
+                //System.out.println(Arrays.toString(streamFromArrays.toArray()));
+            }
+        }
+        /*
+        _________________________________________________
+        4. Создание стрима из файла (каждая строка в файле будет отдельным элементом в стриме) |
+           Files.lines(путь_к_файлу) |
+        */
+        class Test64 {
+            public static void main(String[] args) throws IOException {
+                Stream<String> streamFromFiles = Files.lines(Paths.get("src\\main\\java\\lectureNotes\\file.txt"));
+                //System.out.println(Arrays.toString(streamFromFiles.toArray()));
+            }
+        }
+        /*
+        _________________________________________________
+        5. Создание стрима из строки | «строка».chars() |
+        */
+        class Test65 {
+            public static void main(String[] args) {
+                IntStream streamFromString = "123".chars();
+                //StringBuilder builder = new StringBuilder();
+                //streamFromString.forEach(i -> builder.append(Character.getNumericValue(i)).append(" "));
+                //System.out.println(builder);
+            }
+        }
+        /*
+        _________________________________________________
+        6. С помощью Stream.builder | Stream.builder().add(...)....build() |
+        */
+        class Test66 {
+            public static void main(String[] args) {
+                Stream<Object> build = Stream.builder().add("a1").add("a2").add("a3").build();
+                //System.out.println(Arrays.toString(build.toArray()));
+            }
+        }
+        /*
+        _________________________________________________
+        7. Создание параллельного стрима | collection.parallelStream() |
+        */
+        class Test67 {
+            public static void main(String[] args) {
+                List<String> collection = Arrays.asList("a1","a2","a3");
+                Stream<String> stream = collection.parallelStream();
+                //System.out.println(Arrays.toString(stream.toArray()));
+            }
+        }
+        /*
+        _________________________________________________
+        8. Создание бесконечных стрима с помощью Stream.iterate |
+           Stream.iterate(начальное_условие, выражение_генерации) |
+        */
+        class Test68 {
+            public static void main(String[] args) {
+                Stream<Integer> streamFromIterate = Stream.iterate(1, n -> n + 1);
+                // без ограничения опасно запускать, лупит бесконечно
+                //System.out.println(Arrays.toString(streamFromIterate
+                //        .limit(20)
+                //        .toArray()));
+            }
+        }
+        /*
+        _________________________________________________
+        9. Создание бесконечных стрима с помощью Stream.generate |
+           Stream.generate(выражение_генерации) |
+        */
+        class Test69 {
+            public static void main(String[] args) {
+                Stream<String> streamFromGenerate = Stream.generate(() -> "a1");
+                // без ограничения опасно запускать, лупит бесконечно
+                //System.out.println(Arrays.toString(streamFromGenerate
+                //        .limit(20)
+                //        .toArray()));
+            }
+        }
+        /*
+        _________________________________________________
+
+    В принципе, кроме последних двух способов создания стрима, все не отличается от обычных способов создания коллекций.
+    Последние два способа служат для генерации бесконечных стримов, в iterate задается начальное условие и выражение
+    получение следующего значения из предыдущего, то есть Stream.iterate(1, n -> n + 1) будет выдавать значения
+    1, 2, 3, 4,… N. Stream.generate служит для генерации константных и случайных значений, он просто выдает значения
+    соответствующие выражению, в данном примере, он будет выдавать бесконечное количество значений «a1».
+
+    Для тех кто не знает лямбды#
+    Выражение n -> n + 1, это просто аналог выражения Integer func(Integer n) { return n+1;}, а выражение () -> «a1»
+    аналог выражения String func() { return «a1»;} обернутых в анонимный класс.
+
+    Более подробные примеры#
+    Так же этот пример можно найти на github'e
+    */
+    class Test70 {
+        public static void main(String[] args) throws IOException {
+            System.out.println("Тестовый запуск buildStream");
+
+            // Создание стрима из значений
+            Stream<String> streamFromValues = Stream.of("a1", "a2", "a3");
+            // напечатает: streamFromValues = [a1, a2, a3]
+            System.out.println("streamFromValues = " + streamFromValues.collect(Collectors.toList()));
+
+            // Создание стрима из массива
+            String[] array = {"a1", "a2", "a3"};
+            Stream<String> streamFromArrays = Arrays.stream(array);
+            // напечатает: streamFromArrays = [a1, a2, a3]
+            System.out.println("streamFromArrays = " + streamFromArrays.collect(Collectors.toList()));
+
+            Stream<String> streamFromArrays1 = Stream.of(array);
+            // напечатает streamFromArrays = [a1, a2, a3]
+            System.out.println("streamFromArrays1 = " + streamFromArrays1.collect(Collectors.toList()));
+
+            // Создание стрима из файла (каждая запись в файле будет отдельной строкой в стриме)
+            File file = new File("src\\main\\java\\lectureNotes\\file.txt");
+            file.deleteOnExit();
+            PrintWriter out = new PrintWriter(file);
+            out.println("a1");
+            out.println("a2");
+            out.println("a3");
+            out.close();
+
+            Stream<String> streamFromFiles = Files.lines(Paths.get(file.getAbsolutePath()));
+            // напечатает: streamFromFiles = [a1, a2, a3]
+            System.out.println("streamFromFiles = " + streamFromFiles.collect(Collectors.toList()));
+
+            // Создание стрима из коллекции
+            Collection<String> collection = Arrays.asList("a1", "a2", "a3");
+            Stream<String> streamFromCollection = collection.stream();
+            // напечатает streamFromCollection = [a1, a2, a3]
+            System.out.println("streamFromCollection = " + streamFromCollection.collect(Collectors.toList()));
+
+            // Создание числового стрима из строки
+            IntStream streamFromString = "123".chars();
+            System.out.print("streamFromString = ");
+            // напечатает: streamFromString = 49 , 50 , 51 ,
+            streamFromString.forEach((e) -> System.out.print(e + " , "));
+            System.out.println();
+
+            // С помощью Stream.builder
+            Stream.Builder<String> builder = Stream.builder();
+            Stream<String> streamFromBuilder = builder.add("a1").add("a2").add("a3").build();
+            // напечатает: streamFromFiles = [a1, a2, a3]
+            System.out.println("streamFromBuilder = " + streamFromBuilder.collect((Collectors.toList())));
+
+            // Создание бесконечных стримов
+            // С помощью Stream.iterate
+            Stream<Integer> streamFromIterate = Stream.iterate(1, n -> n + 2);
+            // напечатает streamFromIterate = [1, 3, 5]
+            System.out.println("streamFromIterate = " + streamFromIterate.limit(3).collect(Collectors.toList()));
+
+            // С помощью Stream.generate
+            Stream<String> streamFromGenerate = Stream.generate(() -> "a1");
+            // напечатает streamFromGenerate = [a1, a1, a1]
+            System.out.println("streamFromGenerate = " + streamFromGenerate.limit(3).collect(Collectors.toList()));
+
+            // Создать пустой стрим
+            Stream<String> streamEmpty = Stream.empty();
+            // напечатает streamEmpty = []
+            System.out.println("streamEmpty = " + streamEmpty.collect(Collectors.toList()));
+
+            // Создать параллельный стрим из коллекции
+            Stream<String> parallelStream = collection.parallelStream();
+            // напечатает parallelStream = [a1, a2, a3]
+            System.out.println("parallelStream = " + parallelStream.collect(Collectors.toList()));
+        }
+    }
+    /*
+
+    II. Методы работы со стримами#
+    Java Stream API предлагает два вида методов:
+        1. Конвейерные — возвращают другой stream, то есть работают как builder,
+        2. Терминальные — возвращают другой объект, такой как коллекция, примитивы, объекты, Optional и т.д.
+
+    О том чем отличаются конвейерные и терминальные методы#
+    Общее правило: у stream'a может быть сколько угодно вызовов конвейерных вызовов и в конце один терминальный, при
+    этом все конвейерные методы выполняются лениво и пока не будет вызван терминальный метод никаких действий на самом
+    деле не происходит, так же как создать объект Thread или Runnable, но не вызвать у него start.
+
+    В целом, этот механизм похож на конструирования SQL запросов, может быть сколько угодно вложенных Select'ов и
+    только один результат в итоге. Например, в выражении
+    collection.stream().filter((s) -> s.contains(«1»)).skip(2).findFirst()
+    filter и skip — конвейерные, а findFirst — терминальный, он возвращает объект Optional и это заканчивает
+    работу со stream'ом.
+
+    2.1 Краткое описание конвейерных методов работы со стримами#
+    ------------------------------------------------------------
+    Метод stream | Описание | Пример
+    ------------------------------------------------------------
+
+ */
