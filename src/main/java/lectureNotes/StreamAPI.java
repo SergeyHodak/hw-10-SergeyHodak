@@ -2167,7 +2167,7 @@ class Test60 {
                 }
 
                 public String getName() {return name;}
-                public int getAge() {return age;}
+                public Integer getAge() {return age;}
                 public String getSex() {return sex;}
 
                 @Override
@@ -2286,7 +2286,7 @@ class Test106 {
 
     }
 
-   // findFirst - возвращает первый Optional элемент из стрима
+    // findFirst - возвращает первый Optional элемент из стрима
     // skip - пропускает N первых элементов (где N параметр метода)
     // collect преобразует stream в коллекцию или другую структуру данных
     private static void testFindFirstSkipCount() {
@@ -2376,202 +2376,1337 @@ class Test106 {
 /*
 
     3.2 Примеры использования distinct#
+    Метод distinct возвращает stream без дубликатов, при этом для упорядоченного стрима (например, коллекция на
+    основе list) порядок стабилен, для неупорядоченного — порядок не гарантируется. Рассмотрим результаты работы
+    над коллекцией Collection ordered = Arrays.asList(«a1», «a2», «a2», «a3», «a1», «a2», «a2»)
+    и Collection nonOrdered = new HashSet<>(ordered).
+        ---------------------------------------------------------------------------------------------------------------
+                      Задача | Код примера | // Результат
+        ---------------------------------------------------------------------------------------------------------------
+            Получение коллекции без дубликатов из неупорядоченного стрима |
+            */
+            class Test107 {
+                public static void main(String[] args) {
+                    Collection ordered = Arrays.asList("a1", "a2", "a2", "a3", "a1", "a2", "a2");
+                    Collection nonOrdered = new HashSet<>(ordered);
+                    Object collect = nonOrdered
+                            .stream()
+                            .distinct()
+                            .collect(Collectors.toList());
+                    System.out.println(collect); // [a1, a2, a3] — порядок не гарантируется
+                }
+            }
+            /*
+        ---------------------------------------------------------------------------------------------------------------
+            Получение коллекции без дубликатов из упорядоченного стрима |
+            */
+            class Test108 {
+                public static void main(String[] args) {
+                    Collection ordered = Arrays.asList("a1", "a2", "a2", "a3", "a1", "a2", "a2");
+                    Collection nonOrdered = new HashSet<>(ordered);
+                    Object collect = ordered
+                            .stream()
+                            .distinct()
+                            .collect(Collectors.toList());
+                    System.out.println(collect); // [a1, a2, a3] — порядок гарантируется
+                }
+            }
+            /*
+        ---------------------------------------------------------------------------------------------------------------
 
-Метод distinct возвращает stream без дубликатов, при этом для упорядоченного стрима (например, коллекция на основе list) порядок стабилен, для неупорядоченного — порядок не гарантируется. Рассмотрим результаты работы над коллекцией Collection ordered = Arrays.asList(«a1», «a2», «a2», «a3», «a1», «a2», «a2») и Collection nonOrdered = new HashSet<>(ordered).
-Задача	Код примера	Результат
-Получение коллекции без дубликатов из неупорядоченного стрима	nonOrdered.stream().distinct().collect(Collectors.toList())	[a1, a2, a3] —
-порядок не гарантируется
-Получение коллекции без дубликатов из упорядоченного стрима	ordered.stream().distinct().collect(Collectors.toList());	[a1, a2, a3] —
-порядок гарантируется
+    Обратите внимание:
+    1. Если вы используете distinct с классом, у которого переопределен equals, обязательно так же корректно
+    переопределить hashCode в соответствие с контрактом equals/hashCode (самое главное чтобы hashCode для всех
+    equals объектов, возвращал одинаковое значение), иначе distinct может не удалить дубликаты (аналогично, как
+    при использовании HashSet/HashMap),
+    2. Если вы используете параллельные стримы и вам не важен порядок элементов после удаления дубликатов — намного
+    лучше для производительности сделать сначала стрим неупорядоченным с помощь unordered(), а уже потом применять
+    distinct(), так как подержание стабильности сортировки при параллельном стриме довольно затратно по ресурсам и
+    distinct() на упорядоченным стриме будет выполнятся значительно дольше чем при неупорядоченном.
 
+    Детальные примеры#
+    */
+    class Test109 {
+        // Метод distinct возвращает stream без дубликатов, при этом для упорядоченного стрима (например, коллекция
+           // на основе list) порядок стабилен, для неупорядоченного - порядок не гарантируется
+        // Метод collect преобразует stream в коллекцию или другую структуру данных
+        private static void testDistinct() {
+            System.out.println();
+            System.out.println("Test distinct start");
+            Collection<String> ordered = Arrays.asList("a1", "a2", "a2", "a3", "a1", "a2", "a2");
+            Collection<String> nonOrdered = new HashSet<>(ordered);
 
-Обратите внимание:
-1. Если вы используете distinct с классом, у которого переопределен equals, обязательно так же корректно переопределить hashCode в соответствие с контрактом equals/hashCode (самое главное чтобы hashCode для всех equals объектов, возвращал одинаковое значение), иначе distinct может не удалить дубликаты (аналогично, как при использовании HashSet/HashMap),
-2. Если вы используете параллельные стримы и вам не важен порядок элементов после удаления дубликатов — намного лучше для производительности сделать сначала стрим неупорядоченным с помощь unordered(), а уже потом применять distinct(), так как подержание стабильности сортировки при параллельном стриме довольно затратно по ресурсам и distinct() на упорядоченным стриме будет выполнятся значительно дольше чем при неупорядоченном,
+            // Получение коллекции без дубликатов
+            List<String> distinct = nonOrdered.stream().distinct().collect(Collectors.toList());
+            System.out.println("distinct = " + distinct); // напечатает distinct = [a1, a2, a3] - порядок не гарантируется
 
-Детальные примеры
+            List<String> distinctOrdered = ordered.stream().distinct().collect(Collectors.toList());
+            System.out.println("distinctOrdered = " + distinctOrdered); // напечатает distinct = [a1, a2, a3] - порядок гарантируется
+        }
 
+        public static void main(String[] args) {
+            testDistinct();
+        }
+    }
+    /*
 
+    3.3 Примеры использования Match функций (anyMatch, allMatch, noneMatch)#
+    Условие: дана коллекция строк Arrays.asList(«a1», «a2», «a3», «a1»), давайте посмотрим, как её можно
+    обрабатывать используя Match функции
+        ---------------------------------------------------------------------------------------------------------------
+            Задача | Код примера | // Результат
+        ---------------------------------------------------------------------------------------------------------------
+            Найти существуют ли хоть один «a1» элемент в коллекции |
+            */
+            class Test110 {
+                public static void main(String[] args) {
+                    List<String> collection = Arrays.asList("a1", "a2", "a3", "a1");
+                    boolean b = collection
+                            .stream()
+                            .anyMatch("a1"::equals);
+                    System.out.println(b); // true
+                }
+            }
+            /*
+        ---------------------------------------------------------------------------------------------------------------
+            Найти существуют ли хоть один «a8» элемент в коллекции |
+            */
+            class Test111 {
+                public static void main(String[] args) {
+                    List<String> collection = Arrays.asList("a1", "a2", "a3", "a1");
+                    boolean b = collection
+                            .stream()
+                            .anyMatch("a8"::equals);
+                    System.out.println(b); // false
+                }
+            }
+            /*
+        ---------------------------------------------------------------------------------------------------------------
+            Найти есть ли символ «1» у всех элементов коллекции |
+            */
+            class Test112 {
+                public static void main(String[] args) {
+                    List<String> collection = Arrays.asList("a1", "a2", "a3", "a1");
+                    boolean b = collection
+                            .stream()
+                            .allMatch((s) -> s.contains("1"));
+                    System.out.println(b); // false
+                }
+            }
+            /*
+        ---------------------------------------------------------------------------------------------------------------
+            Проверить что не существуют ни одного «a7» элемента в коллекции |
+            */
+            class Test113 {
+                public static void main(String[] args) {
+                    List<String> collection = Arrays.asList("a1", "a2", "a3", "a1");
+                    boolean b = collection
+                            .stream()
+                            .noneMatch("a7"::equals);
+                    System.out.println(b); // true
+                }
+            }
+            /*
+        ---------------------------------------------------------------------------------------------------------------
 
+    Детальные примеры#
+    Также этот пример можно найти на github'e
+    https://github.com/Vedenin/java_in_examples/blob/master/stream_api/src/com/github/vedenin/rus/stream_api/FindAndMatchTests.java
+    */
+    class Test114 {
+        // Метод anyMatch - возвращает true, если условие выполняется хотя бы для одного элемента
+        // Метод noneMatch - возвращает true, если условие не выполняется ни для одного элемента
+        // Метод allMatch - возвращает true, если условие выполняется для всех элементов
+        private static void testMatch() {
+            System.out.println();
+            System.out.println("Test anyMatch, allMatch, noneMatch  start");
+            Collection<String> collection = Arrays.asList("a1", "a2", "a3", "a1");
 
-3.3 Примеры использования Match функций (anyMatch, allMatch, noneMatch)
+            // найти существуют ли хоть одно совпадение с шаблоном в коллекции
+            boolean isAnyOneTrue = collection.stream().anyMatch("a1"::equals);
+            System.out.println("anyOneTrue " + isAnyOneTrue); // напечатает true
+            boolean isAnyOneFalse = collection.stream().anyMatch("a8"::equals);
+            System.out.println("anyOneFlase " + isAnyOneFalse); // напечатает false
 
-Условие: дана коллекция строк Arrays.asList(«a1», «a2», «a3», «a1»), давайте посмотрим, как её можно обрабатывать используя Match функции
+            // найти существуют ли все совпадения с шаблоном в коллекции
+            boolean isAll = collection.stream().allMatch((s) -> s.contains("1"));
+            System.out.println("isAll " + isAll); // напечатает false
 
-Задача	Код примера	Результат
-Найти существуют ли хоть один «a1» элемент в коллекции	collection.stream().anyMatch(«a1»::equals)	true
-Найти существуют ли хоть один «a8» элемент в коллекции	collection.stream().anyMatch(«a8»::equals)	false
-Найти есть ли символ «1» у всех элементов коллекции	collection.stream().allMatch((s) -> s.contains(«1»))	false
-Проверить что не существуют ни одного «a7» элемента в коллекции	collection.stream().noneMatch(«a7»::equals)	true
+            // сравнение на неравенство
+            boolean isNotEquals = collection.stream().noneMatch("a7"::equals);
+            System.out.println("isNotEquals " + isNotEquals); // напечатает true
+        }
 
-Детальные примеры
+        public static void main(String[] args) {
+            testMatch();
+        }
+    }
+    /*
 
+    3.4 Примеры использования Map функций (map, mapToInt, FlatMap, FlatMapToInt)#
+    Условие: даны две коллекции collection1 = Arrays.asList(«a1», «a2», «a3», «a1»)
+    и collection2 = Arrays.asList(«1,2,0», «4,5»), давайте посмотрим как её можно обрабатывать используя
+    различные map функции
+        ---------------------------------------------------------------------------------------------------------------
+            Задача | Код примера | // Результат
+        ---------------------------------------------------------------------------------------------------------------
+            Добавить "_1" к каждому элементу первой коллекции |
+            */
+            class Test115 {
+                public static void main(String[] args) {
+                    List<String> collection1 = Arrays.asList("a1", "a2", "a3", "a1");
+                    List<String> collect = collection1
+                            .stream()
+                            .map((s) -> s + "_1")
+                            .collect(Collectors.toList());
+                    System.out.println(collect); // [a1_1, a2_1, a3_1, a1_1]
+                }
+            }
+            /*
+        ---------------------------------------------------------------------------------------------------------------
+            В первой коллекции убрать первый символ и вернуть массив чисел (int[]) |
+            */
+            class Test116 {
+                public static void main(String[] args) {
+                    List<String> collection1 = Arrays.asList("a1", "a2", "a3", "a1");
+                    int[] ints = collection1
+                            .stream()
+                            .mapToInt((s) -> Integer.parseInt(s.substring(1)))
+                            .toArray();
+                    System.out.println(Arrays.toString(ints)); // [1, 2, 3, 1]
+                }
+            }
+            /*
+        ---------------------------------------------------------------------------------------------------------------
+            Из второй коллекции получить все числа, перечисленные через запятую из всех элементов |
+            */
+            class Test117 {
+                public static void main(String[] args) {
+                    List<String> collection2 = Arrays.asList("1,2,0", "4,5");
+                    String[] strings = collection2
+                            .stream()
+                            .flatMap((p) -> Arrays.asList(p.split(",")).stream())
+                            .toArray(String[]::new);
+                    System.out.println(Arrays.toString(strings)); // [1, 2, 0, 4, 5]
+                }
+            }
+            /*
+        ---------------------------------------------------------------------------------------------------------------
+            Из второй коллекции получить сумму всех чисел, перечисленных через запятую |
+            */
+            class Test118 {
+                public static void main(String[] args) {
+                    List<String> collection2 = Arrays.asList("1,2,0", "4,5");
+                    int sum = collection2
+                            .stream()
+                            .flatMapToInt((p) -> Arrays.asList(p.split(",")).stream().mapToInt(Integer::parseInt))
+                            .sum();
+                    System.out.println(sum); // 12
+                }
+            }
+            /*
+        ---------------------------------------------------------------------------------------------------------------
 
+    Обратите внимание: все map функции могут вернуть объект другого типа (класса), то есть map может работать со
+    стримом строк, а на выходе дать Stream из значений Integer или получать класс людей People, а возвращать класс
+    Office, где эти люди работают и т.п., flatMap (flatMapToInt и т.п.) на выходе должны возвращать стрим с одним,
+    несколькими или ни одним элементов для каждого элемента входящего стрима (см. последние два примера).
 
+    Детальные примеры#
+    Так же этот пример можно найти на github'e
+    https://github.com/Vedenin/java_in_examples/blob/master/stream_api/src/com/github/vedenin/rus/stream_api/MapTests.java
+    */
+    class Test119 {
+        // Метод Map изменяет выборку по определенному правилу, возвращает stream с новой выборкой
+        private static void testMap() {
+            System.out.println();
+            System.out.println("Test map start");
+            Collection<String> collection = Arrays.asList("a1", "a2", "a3", "a1");
+            // Изменение всех элементов коллекции
+            List<String> transform = collection.
+                    stream()
+                    .map((s) -> s + "_1")
+                    .collect(Collectors.toList());
+            System.out.println("transform = " + transform); // напечатает: transform = [a1_1, a2_1, a3_1, a1_1]
 
-3.4 Примеры использования Map функций (map, mapToInt, FlatMap, FlatMapToInt)
+            // убрать первый символ и вернуть числа
+            List<Integer> number = collection
+                    .stream()
+                    .map((s) -> Integer.parseInt(s.substring(1)))
+                    .collect(Collectors.toList());
+            System.out.println("number = " + number); // напечатает: transform = [1, 2, 3, 1]
+        }
 
-Условие: даны две коллекции collection1 = Arrays.asList(«a1», «a2», «a3», «a1») и collection2 = Arrays.asList(«1,2,0», «4,5»), давайте посмотрим как её можно обрабатывать используя различные map функции
+        // Метод MapToInt - изменяет выборку по определенному правилу, возвращает stream с новой числовой выборкой
+        private static void testMapToInt() {
+            System.out.println();
+            System.out.println("Test mapToInt start");
+            Collection<String> collection = Arrays.asList("a1", "a2", "a3", "a1");
+            // убрать первый символ и вернуть числа
+            int[] number = collection
+                    .stream()
+                    .mapToInt((s) -> Integer.parseInt(s.substring(1)))
+                    .toArray();
+            System.out.println("number = " + Arrays.toString(number)); // напечатает: number = [1, 2, 3, 1]
 
-Задача	Код примера	Результат
-Добавить "_1" к каждому элементу первой коллекции	collection1.stream().map((s) -> s + "_1").collect(Collectors.toList())	[a1_1, a2_1, a3_1, a1_1]
-В первой коллекции убрать первый символ и вернуть массив чисел (int[])	collection1.stream().mapToInt((s) -> Integer.parseInt(s.substring(1))).toArray()	[1, 2, 3, 1]
-Из второй коллекции получить все числа, перечисленные через запятую из всех элементов	collection2.stream().flatMap((p) -> Arrays.asList(p.split(",")).stream()).toArray(String[]::new)	[1, 2, 0, 4, 5]
-Из второй коллекции получить сумму всех чисел, перечисленных через запятую	collection2.stream().flatMapToInt((p) -> Arrays.asList(p.split(",")).stream().mapToInt(Integer::parseInt)).sum()	12
+        }
 
-Обратите внимание: все map функции могут вернуть объект другого типа (класса), то есть map может работать со стримом строк, а на выходе дать Stream из значений Integer или получать класс людей People, а возвращать класс Office, где эти люди работают и т.п., flatMap (flatMapToInt и т.п.) на выходе должны возвращать стрим с одним, несколькими или ни одним элементов для каждого элемента входящего стрима (см. последние два примера).
+        // Метод FlatMap - похоже на Map - только вместо одного значения, он возвращает целый stream значений
+        private static void testFlatMap() {
+            System.out.println();
+            System.out.println("Test flat map start");
+            Collection<String> collection = Arrays.asList("1,2,0", "4,5");
+            // получить все числовые значения, которые хранятся через запятую в collection
+            String[] number = collection
+                    .stream()
+                    .flatMap((p) -> Arrays.asList(p.split(",")).stream())
+                    .toArray(String[]::new);
+            System.out.println("number = " + Arrays.toString(number)); // напечатает: number = [1, 2, 0, 4, 5]
+        }
 
-Детальные примеры
+        // Метод FlatMapToInt - похоже на MapToInt - только вместо одного значения, он возвращает целый stream значений
+        private static void testFlatMapToInt() {
+            System.out.println();
+            System.out.println("Test flat map start");
+            Collection<String> collection = Arrays.asList("1,2,0", "4,5");
+            // получить сумму всех числовые значения, которые хранятся через запятую в collection
+            int sum = collection
+                    .stream()
+                    .flatMapToInt((p) -> Arrays.asList(p.split(",")).stream().mapToInt(Integer::parseInt))
+                    .sum();
+            System.out.println("sum = " + sum); // напечатает: sum = 12
+        }
 
+        public static void main(String[] args) {
+            testMap();
+            testMapToInt();
+            testFlatMap();
+            testFlatMapToInt();
+        }
+    }
+    /*
 
+    3.5 Примеры использования Sorted функции#
+    Условие: даны две коллекции коллекция строк Arrays.asList(«a1», «a4», «a3», «a2», «a1», «a4»)
+    и коллекция людей класса People (с полями name — имя, age — возраст, sex — пол), вида
+    Arrays.asList( new People(«Вася», 16, Sex.MAN), new People(«Петя», 23, Sex.MAN),
+    new People(«Елена», 42, Sex.WOMEN), new People(«Иван Иванович», 69, Sex.MAN)).
+    Давайте посмотрим примеры как их можно сортировать:
+        ---------------------------------------------------------------------------------------------------------------
+            Задача | Код примера // Результат
+        ---------------------------------------------------------------------------------------------------------------
+            Отсортировать коллекцию строк по алфавиту |
+            */
+            class Test120 {
+                public static void main(String[] args) {
+                    List<String> collection = Arrays.asList("a1", "a4", "a3", "a2", "a1", "a4");
+                    List<String> collect = collection
+                            .stream()
+                            .sorted()
+                            .collect(Collectors.toList());
+                    System.out.println(collect); // [a1, a1, a2, a3, a4, a4]
+                }
+            }
+            /*
+        ---------------------------------------------------------------------------------------------------------------
+            Отсортировать коллекцию строк по алфавиту в обратном порядке |
+            */
+            class Test121 {
+                public static void main(String[] args) {
+                    List<String> collection = Arrays.asList("a1", "a4", "a3", "a2", "a1", "a4");
+                    List<String> collect = collection
+                            .stream()
+                            .sorted((o1, o2) -> -o1.compareTo(o2))
+                            .collect(Collectors.toList());
+                    System.out.println(collect); // [a4, a4, a3, a2, a1, a1]
+                }
+            }
+            /*
+        ---------------------------------------------------------------------------------------------------------------
+            Отсортировать коллекцию строк по алфавиту и убрать дубликаты |
+            */
+            class Test122 {
+                public static void main(String[] args) {
+                    List<String> collection = Arrays.asList("a1", "a4", "a3", "a2", "a1", "a4");
+                    List<String> collect = collection
+                            .stream()
+                            .sorted()
+                            .distinct()
+                            .collect(Collectors.toList());
+                    System.out.println(collect); // [a1, a2, a3, a4]
+                }
+            }
+            /*
+        ---------------------------------------------------------------------------------------------------------------
+            Отсортировать коллекцию строк по алфавиту в обратном порядке и убрать дубликаты |
+            */
+            class Test123 {
+                public static void main(String[] args) {
+                    List<String> collection = Arrays.asList("a1", "a4", "a3", "a2", "a1", "a4");
+                    List<String> collect = collection
+                            .stream()
+                            .sorted((o1, o2) -> -o1.compareTo(o2))
+                            .distinct()
+                            .collect(Collectors.toList());
+                    System.out.println(collect); // [a4, a3, a2, a1]
+                }
+            }
+            /*
+        ---------------------------------------------------------------------------------------------------------------
+            Отсортировать коллекцию людей по имени в обратном алфавитном порядке |
+            */
+            class Test124 {
+                public static void main(String[] args) {
+                    List<People> peoples = CollectionPeoples.getPeoples();
+                    List<People> collect = peoples
+                            .stream()
+                            .sorted((o1, o2) -> -o1.getName().compareTo(o2.getName()))
+                            .collect(Collectors.toList());
+                    System.out.println(collect); // [{'Петя'}, {'Иван Иванович'}, {'Елена'}, {'Вася'}]
+                }
+            }
+            /*
+        ---------------------------------------------------------------------------------------------------------------
+            Отсортировать коллекцию людей сначала по полу, а потом по возрасту |
+            */
+            class Test125 {
+                public static void main(String[] args) {
+                    List<People> peoples = CollectionPeoples.getPeoples();
+                    Collection<People> bySexAndAge = peoples
+                            .stream()
+                            .sorted((o1, o2) -> !Objects.equals(o1.getSex(), o2.getSex()) ?
+                                    o1.getSex().compareTo(o2.getSex()) :
+                                    o1.getAge().compareTo(o2.getAge()))
+                            .collect(Collectors.toList());
+                    System.out.println(bySexAndAge); // [{'Вася'}, {'Петя'}, {'Иван Иванович'}, {'Елена'}]
+                }
+            }
+            /*
+		---------------------------------------------------------------------------------------------------------------
 
+    Детальные примеры#
+    Так же этот пример можно найти на github'e
+    https://github.com/Vedenin/java_in_examples/blob/master/stream_api/src/com/github/vedenin/rus/stream_api/SortedTests.java
+    */
+    class Test126 {
+        // Метод Sorted позволяет сортировать значения либо в натуральном порядке, либо задавая Comparator
+        private static void testSorted() {
+            System.out.println();
+            System.out.println("Test sorted start");
 
-3.5 Примеры использования Sorted функции
+            // ************ Работа со строками
+            Collection<String> collection = Arrays.asList("a1", "a4", "a3", "a2", "a1", "a4");
 
-Условие: даны две коллекции коллекция строк Arrays.asList(«a1», «a4», «a3», «a2», «a1», «a4») и коллекция людей класса People (с полями name — имя, age — возраст, sex — пол), вида Arrays.asList( new People(«Вася», 16, Sex.MAN), new People(«Петя», 23, Sex.MAN), new People(«Елена», 42, Sex.WOMEN), new People(«Иван Иванович», 69, Sex.MAN)). Давайте посмотрим примеры как их можно сортировать:
+            // отсортировать значения по алфавиту
+            List<String> sorted = collection
+                    .stream()
+                    .sorted()
+                    .collect(Collectors.toList());
+            System.out.println("sorted = " + sorted); // напечатает: sorted = [a1, a1, a2, a3, a4, a4]
 
-Задача	Код примера	Результат
-Отсортировать коллекцию строк по алфавиту	collection.stream().sorted().collect(Collectors.toList())	[a1, a1, a2, a3, a4, a4]
-Отсортировать коллекцию строк по алфавиту в обратном порядке	collection.stream().sorted((o1, o2) -> -o1.compareTo(o2)).collect(Collectors.toList())	[a4, a4, a3, a2, a1, a1]
-Отсортировать коллекцию строк по алфавиту и убрать дубликаты	collection.stream().sorted().distinct().collect(Collectors.toList())	[a1, a2, a3, a4]
-Отсортировать коллекцию строк по алфавиту в обратном порядке и убрать дубликаты	collection.stream().sorted((o1, o2) -> -o1.compareTo(o2)).distinct().collect(Collectors.toList())	[a4, a3, a2, a1]
-Отсортировать коллекцию людей по имени в обратном алфавитном порядке	peoples.stream().sorted((o1,o2) -> -o1.getName().compareTo(o2.getName())).collect(Collectors.toList())	[{'Петя'}, {'Иван Иванович'}, {'Елена'}, {'Вася'}]
-Отсортировать коллекцию людей сначала по полу, а потом по возрасту	peoples.stream().sorted((o1, o2) -> o1.getSex() != o2.getSex()? o1.getSex().
-compareTo(o2.getSex()): o1.getAge().compareTo(o2.getAge())).collect(Collectors.toList())	[{'Вася'}, {'Петя'}, {'Иван Иванович'}, {'Елена'}]
+            // отсортировать значения по алфавиту и убрать дубликаты
+            List<String> sortedDistinct = collection
+                    .stream()
+                    .sorted()
+                    .distinct()
+                    .collect(Collectors.toList());
+            System.out.println("sortedDistinct = " + sortedDistinct); // напечатает: sortedDistinct = [a1, a2, a3, a4]
 
+            // отсортировать значения по алфавиту в обратном порядке
+            List<String> sortedReverse = collection
+                    .stream()
+                    .sorted((o1, o2) -> -o1.compareTo(o2))
+                    .collect(Collectors.toList());
+            System.out.println("sortedReverse = " + sortedReverse); // напечатает: sortedReverse = [a4, a4, a3, a2, a1, a1]
 
-Детальные примеры
+            // отсортировать значения по алфавиту в обратном порядке и убрать дубликаты
+            List<String> distinctReverse = collection
+                    .stream()
+                    .sorted((o1, o2) -> -o1.compareTo(o2))
+                    .distinct()
+                    .collect(Collectors.toList());
+            System.out.println("distinctReverse = " + distinctReverse); // напечатает: sortedReverse = [a4, a3, a2, a1]
 
+            // ************ Работа с объектами
+            // Зададим коллекцию людей
+            Collection<People> peoples = Arrays.asList(
+                    new People("Вася", 16, Sex.MAN),
+                    new People("Петя", 23, Sex.MAN),
+                    new People("Елена", 42, Sex.WOMEN),
+                    new People("Иван Иванович", 69, Sex.MAN)
+            );
 
+            // Отсортировать по имени в обратном алфавитном порядке
+            Collection<People> byName = peoples
+                    .stream()
+                    .sorted((o1,o2) -> -o1.getName().compareTo(o2.getName()))
+                    .collect(Collectors.toList());
+            System.out.println("byName = " + byName); // byName = [{name='Петя', age=23, sex=MAN},
+            // {name='Иван Иванович', age=69, sex=MAN}, {name='Елена', age=42, sex=WOMEN},
+            // {name='Вася', age=16, sex=MAN}]
 
+            // Отсортировать сначала по полу, а потом по возрасту
+            Collection<People> bySexAndAge = peoples
+                    .stream()
+                    .sorted((o1, o2) -> o1.getSex() != o2.getSex() ?
+                            o1.getSex().compareTo(o2.getSex()) :
+                            o1.getAge().compareTo(o2.getAge()))
+                    .collect(Collectors.toList());
+            System.out.println("bySexAndAge = " + bySexAndAge); // bySexAndAge = [{name='Вася', age=16, sex=MAN},
+            // {name='Петя', age=23, sex=MAN}, {name='Иван Иванович', age=69, sex=MAN},
+            // {name='Елена', age=42, sex=WOMEN}]
+        }
 
-3.6 Примеры использования Max и Min функций
+        private enum Sex {
+            MAN,
+            WOMEN
+        }
 
-Условие: дана коллекция строк Arrays.asList(«a1», «a2», «a3», «a1»), и коллекция класса Peoples из прошлых примеров про Sorted и Filter функции.
+        private static class People {
+            private final String name;
+            private final Integer age;
+            private final Sex sex;
 
-Задача	Код примера	Результат
-Найти максимальное значение среди коллекции строк	collection.stream().max(String::compareTo).get()	a3
-Найти минимальное значение среди коллекции строк	collection.stream().min(String::compareTo).get()	a1
-Найдем человека с максимальным возрастом	peoples.stream().max((p1, p2) -> p1.getAge().compareTo(p2.getAge())).get()	{name='Иван Иванович', age=69, sex=MAN}
-Найдем человека с минимальным возрастом	peoples.stream().min((p1, p2) -> p1.getAge().compareTo(p2.getAge())).get()	{name='Вася', age=16, sex=MAN}
+            public People(String name, Integer age, Sex sex) {
+                this.name = name;
+                this.age = age;
+                this.sex = sex;
+            }
 
+            public String getName() {
+                return name;
+            }
 
-Детальные примеры
+            public Integer getAge() {
+                return age;
+            }
 
+            public Sex getSex() {
+                return sex;
+            }
 
+            @Override
+            public String toString() {
+                return "{" +
+                        "name='" + name + '\'' +
+                        ", age=" + age +
+                        ", sex=" + sex +
+                        '}';
+            }
 
+            @Override
+            public boolean equals(Object o) {
+                if (this == o) return true;
+                if (!(o instanceof People)) return false;
+                People people = (People) o;
+                return Objects.equals(name, people.name) &&
+                        Objects.equals(age, people.age) &&
+                        Objects.equals(sex, people.sex);
+            }
 
-3.7 Примеры использования ForEach и Peek функций
+            @Override
+            public int hashCode() {
+                return Objects.hash(name, age, sex);
+            }
+        }
 
-Обе ForEach и Peek по сути делают одно и тоже, меняют свойства объектов в стриме, единственная разница между ними в том что ForEach терминальная и она заканчивает работу со стримом, в то время как Peek конвейерная и работа со стримом продолжается. Например, есть коллекция:
-        Collection<StringBuilder> list = Arrays.asList(new StringBuilder("a1"), new StringBuilder("a2"), new StringBuilder("a3"));
+        public static void main(String[] args) {
+            testSorted();
+        }
+    }
+    /*
 
-И нужно добавить к каждому элементу "_new", то для ForEach код будет
+    3.6 Примеры использования Max и Min функций#
+    Условие: дана коллекция строк Arrays.asList(«a1», «a2», «a3», «a1»),
+    и коллекция класса Peoples из прошлых примеров про Sorted и Filter функции.
+        ---------------------------------------------------------------------------------------------------------------
+            Задача | Код примера // Результат
+        ---------------------------------------------------------------------------------------------------------------
+            Найти максимальное значение среди коллекции строк |
+            */
+            class Test127 {
+                public static void main(String[] args) {
+                    List<String> collection = Arrays.asList("a1", "a2", "a3", "a1");
+                    String s = collection
+                            .stream()
+                            .max(String::compareTo)
+                            .get();
+                    System.out.println(s); // a3
+                }
+            }
+            /*
+        ---------------------------------------------------------------------------------------------------------------
+            Найти минимальное значение среди коллекции строк |
+            */
+            class Test128 {
+                public static void main(String[] args) {
+                    List<String> collection = Arrays.asList("a1", "a2", "a3", "a1");
+                    String s = collection
+                            .stream()
+                            .min(String::compareTo)
+                            .get();
+                    System.out.println(s); // a1
+                }
+            }
+            /*
+        ---------------------------------------------------------------------------------------------------------------
+            Найдем человека с максимальным возрастом |
+            */
+            class Test129 {
+                public static void main(String[] args) {
+                    List<People> peoples = CollectionPeoples.getPeoples();
+                    People people = peoples.stream().max((p1, p2) -> p1.getAge().compareTo(p2.getAge())).get();
+                    System.out.println(people); // {name='Иван Иванович', age=69, sex=MAN}
+                }
+            }
+            /*
+        ---------------------------------------------------------------------------------------------------------------
+            Найдем человека с минимальным возрастом |
+            */
+            class Test130 {
+                public static void main(String[] args) {
+                    List<People> peoples = CollectionPeoples.getPeoples();
+                    People people = peoples.stream().min((p1, p2) -> p1.getAge().compareTo(p2.getAge())).get();
+                    System.out.println(people); // {name='Вася', age=16, sex=MAN}
+                }
+            }
+            /*
+        ---------------------------------------------------------------------------------------------------------------
+
+    Детальные примеры#
+    Так же этот пример можно найти на github'e
+    https://github.com/Vedenin/java_in_examples/blob/master/stream_api/src/com/github/vedenin/rus/stream_api/MaxMinTests.java
+    */
+    class Test131 {
+        // Метод max вернет максимальный элемент, в качестве условия использует компаратор
+        // Метод min вернет минимальный элемент, в качестве условия использует компаратор
+        private static void testMinMax() {
+            System.out.println();
+            System.out.println("Test min and max start");
+
+            // ************ Работа со строками
+            Collection<String> collection = Arrays.asList("a1", "a2", "a3", "a1");
+            // найти максимальное значение
+            String max = collection
+                    .stream()
+                    .max(String::compareTo)
+                    .get();
+            System.out.println("max " + max); // напечатает: max a3
+            // найти минимальное значение
+            String min = collection
+                    .stream()
+                    .min(String::compareTo)
+                    .get();
+            System.out.println("min " + min); // напечатает: min a1
+
+            // ************ Работа со сложными объектами
+            // Зададим коллекцию людей
+            Collection<People> peoples = Arrays.asList(
+                    new People("Вася", 16, Sex.MAN),
+                    new People("Петя", 23, Sex.MAN),
+                    new People("Елена", 42, Sex.WOMEN),
+                    new People("Иван Иванович", 69, Sex.MAN)
+            );
+            // найти человека с максимальным возрастом
+            People older = peoples
+                    .stream()
+                    .max((p1, p2) -> p1.getAge().compareTo(p2.getAge()))
+                    .get();
+            System.out.println("older " + older); // напечатает: older {name='Иван Иванович', age=69, sex=MAN
+            // найти человека с минимальным возрастом
+            People younger = peoples
+                    .stream()
+                    .min((p1, p2) -> p1.getAge().compareTo(p2.getAge()))
+                    .get();
+            System.out.println("younger " + younger); // напечатает: younger {name='Вася', age=16, sex=MAN}
+        }
+
+        private enum Sex {
+            MAN,
+            WOMEN
+        }
+
+        private static class People {
+            private final String name;
+            private final Integer age;
+            private final Sex sex;
+
+            public People(String name, Integer age, Sex sex) {
+                this.name = name;
+                this.age = age;
+                this.sex = sex;
+            }
+
+            public String getName() {return name;}
+            public Integer getAge() {return age;}
+            public Sex getSex() {return sex;}
+
+            @Override
+            public String toString() {
+                return "{" +
+                        "name='" + name + '\'' +
+                        ", age=" + age +
+                        ", sex=" + sex +
+                        '}';
+            }
+            @Override
+            public boolean equals(Object o) {
+                if (this == o) return true;
+                if (!(o instanceof People)) return false;
+                People people = (People) o;
+                return Objects.equals(name, people.name) &&
+                        Objects.equals(age, people.age) &&
+                        Objects.equals(sex, people.sex);
+            }
+            @Override
+            public int hashCode() {
+                return Objects.hash(name, age, sex);
+            }
+        }
+
+        public static void main(String[] args) {
+            testMinMax();
+        }
+    }
+    /*
+
+    3.7 Примеры использования ForEach и Peek функций#
+    Обе ForEach и Peek по сути делают одно и тоже, меняют свойства объектов в стриме, единственная разница между ними
+    в том что ForEach терминальная и она заканчивает работу со стримом, в то время как Peek конвейерная и работа со
+    стримом продолжается. Например, есть коллекция: Collection<StringBuilder> list =
+    Arrays.asList(new StringBuilder("a1"), new StringBuilder("a2"), new StringBuilder("a3"));
+    И нужно добавить к каждому элементу "_new", то для ForEach код будет
         list.stream().forEachOrdered((p) -> p.append("_new")); // list - содержит [a1_new, a2_new, a3_new]
+    а для peek код будет
+        List<StringBuilder> newList = list.stream().peek((p) -> p.append("_new")).collect(Collectors.toList());
+        // и list и newList содержат [a1_new, a2_new, a3_new]
 
-а для peek код будет
-  List<StringBuilder> newList = list.stream().peek((p) -> p.append("_new")).collect(Collectors.toList()); // и list и newList содержат [a1_new, a2_new, a3_new]
+    Детальные примеры#
+    Так же этот пример можно найти на github'e
+    https://github.com/Vedenin/java_in_examples/blob/master/stream_api/src/com/github/vedenin/rus/stream_api/ForEachAndPeekTests.java
+    */
+    class Test132 {
+        // Метод ForEach применяет указанный метод к каждому элементу стрима и заканчивает работу со стримом
+        private static void testForEach() {
+            System.out.println();
+            System.out.println("For each start");
+            Collection<String> collection = Arrays.asList("a1", "a2", "a3", "a1");
+            // Напечатать отладочную информацию по каждому элементу стрима
+            System.out.print("forEach = ");
+            collection
+                    .stream()
+                    .map(String::toUpperCase)
+                    .forEach((e) -> System.out.print(e + ",")); // напечатает: forEach = A1,A2,A3,A1,
+            System.out.println();
 
+            Collection<StringBuilder> list = Arrays
+                    .asList(new StringBuilder("a1"), new StringBuilder("a2"), new StringBuilder("a3"));
+            list
+                    .stream()
+                    .forEachOrdered((p) -> p.append("_new"));
+            System.out.println("forEachOrdered = " + list); // напечатает: forEachOrdered = [a1_new, a2_new, a3_new]
+        }
 
-Детальные примеры
+        // Метод Peek возвращает тот же стрим, но при этом применяет указанный метод к каждому элементу стрима
+        private static void testPeek() {
+            System.out.println();
+            System.out.println("Test peek start");
+            Collection<String> collection = Arrays.asList("a1", "a2", "a3", "a1");
+            // Напечатать отладочную информацию по каждому элементу стрима
+            System.out.print("peak1 = ");
+            List<String> peek = collection
+                    .stream()
+                    .map(String::toUpperCase)
+                    .peek((e) -> System.out.print(e + ","))
+                    .collect(Collectors.toList());
+            System.out.println(); // напечатает: peak1 = A1,A2,A3,A1,
+            System.out.println("peek2 = " + peek); // напечатает: peek2 = [A1, A2, A3, A1]
 
+            Collection<StringBuilder> list = Arrays.
+                    asList(new StringBuilder("a1"), new StringBuilder("a2"), new StringBuilder("a3"));
+            List<StringBuilder> newList = list
+                    .stream()
+                    .peek((p) -> p.append("_new"))
+                    .collect(Collectors.toList());
+            System.out.println("newList = " + newList); // напечатает: newList = [a1_new, a2_new, a3_new]
+        }
 
+        public static void main(String[] args) {
+            testForEach();
+            testPeek();
+        }
+    }
+    /*
 
+    3.8 Примеры использования Reduce функции#
+    Метод reduce позволяет выполнять агрегатные функции на всей коллекцией (такие как сумма, нахождение минимального
+    или максимального значение и т.п.), он возвращает одно значение для стрима, функция получает два аргумента —
+    значение полученное на прошлых шагах и текущее значение.
+    Условие: Дана коллекция чисел Arrays.asList(1, 2, 3, 4, 2) выполним над ними несколько действий используя reduce.
+        ---------------------------------------------------------------------------------------------------------------
+            Задача | Код примера // Результат
+        ---------------------------------------------------------------------------------------------------------------
+            Получить сумму чисел или вернуть 0 |
+            */
+            class Test133 {
+                public static void main(String[] args) {
+                    List<Integer> collection = Arrays.asList(1, 2, 3, 4, 2);
+                    Integer integer = collection
+                            .stream()
+                            .reduce((s1, s2) -> s1 + s2)
+                            .orElse(0);
+                    System.out.println(integer); // 12
+                }
+            }
+            /*
+        ---------------------------------------------------------------------------------------------------------------
+            Вернуть максимум или -1 |
+            */
+            class Test134 {
+                public static void main(String[] args) {
+                    List<Integer> collection = Arrays.asList(1, 2, 3, 4, 2);
+                    Integer integer = collection
+                            .stream()
+                            .reduce(Integer::max)
+                            .orElse(-1);
+                    System.out.println(integer); // 4
+                }
+            }
+            /*
+        ---------------------------------------------------------------------------------------------------------------
+            Вернуть сумму нечетных чисел или 0 |
+            */
+            class Test135 {
+                public static void main(String[] args) {
+                    List<Integer> collection = Arrays.asList(1, 2, 3, 4, 2);
+                    Integer integer = collection
+                            .stream()
+                            .filter(o -> o % 2 != 0)
+                            .reduce((s1, s2) -> s1 + s2)
+                            .orElse(0);
+                    System.out.println(integer); // 4
+                }
+            }
+            /*
+        ---------------------------------------------------------------------------------------------------------------
 
-3.8 Примеры использования Reduce функции
+    Детальные примеры#
+    Также этот пример можно найти на github'e
+    https://github.com/Vedenin/java_in_examples/blob/master/stream_api/src/com/github/vedenin/rus/stream_api/ReduceTests.java
+    */
+    class Test136 {
+        // Метод reduce позволяет выполнять агрегатные функции на всей коллекцией (такие как сумма, нахождение
+        // минимального или максимального значение и т.п.)
+        // Он возвращает одно Optional значение
+        // map - преобразует один объект в другой (например, класс одного тип в другой)
+        // mapToInt - преобразование объектов в числовой стрим (стрим, состоящий из значений int)
+        private static void testReduce() {
+            System.out.println();
+            System.out.println("Test reduce start");
 
-Метод reduce позволяет выполнять агрегатные функции на всей коллекцией (такие как сумма, нахождение минимального или максимального значение и т.п.), он возвращает одно значение для стрима, функция получает два аргумента — значение полученное на прошлых шагах и текущее значение.
+            // ************ Работа с числовыми объектами
+            Collection<Integer> collection = Arrays.asList(1, 2, 3, 4, 2);
 
-Условие: Дана коллекция чисел Arrays.asList(1, 2, 3, 4, 2) выполним над ними несколько действий используя reduce.
+            // Вернуть сумму
+            Integer sum = collection
+                    .stream()
+                    .reduce((s1, s2) -> s1 + s2)
+                    .orElse(0); // через stream Api
 
-Задача	Код примера	Результат
-Получить сумму чисел или вернуть 0	collection.stream().reduce((s1, s2) -> s1 + s2).orElse(0)	12
-Вернуть максимум или -1	collection.stream().reduce(Integer::max).orElse(-1)	4
-Вернуть сумму нечетных чисел или 0	collection.stream().filter(o -> o % 2 != 0).reduce((s1, s2) -> s1 + s2).orElse(0)	4
+            Integer sumOld = 0; // по старому методу
+            for(Integer i: collection) {
+                sumOld += i;
+            }
+            System.out.println("sum = " + sum + " : " + sumOld); // напечатает: sum = 12 : 12
 
+            // Вернуть максимум
+            Integer max1 = collection
+                    .stream()
+                    .reduce((s1, s2) -> s1 > s2 ? s1 : s2)
+                    .orElse(0); // через stream Api
 
-Детальные примеры
+            Integer max2 = collection
+                    .stream()
+                    .reduce(Integer::max)
+                    .orElse(0); // через stream Api используя Integer::max
 
+            Integer maxOld = null; // по старому методу
+            for(Integer i: collection) {
+                maxOld = maxOld != null && maxOld > i ? maxOld : i;
+            }
+            maxOld = maxOld == null? 0 : maxOld;
 
+            System.out.println("max = " + max1 + " : " + max2 + " : " + maxOld); // напечатает: max = 4 : 4 : 4
 
+            // Вернуть минимум
+            Integer min = collection
+                    .stream()
+                    .reduce((s1, s2) -> s1 < s2 ? s1 : s2)
+                    .orElse(0); // через stream Api
 
-3.9 Примеры использования toArray и collect функции
+            Integer minOld = null; // по старому методу
+            for(Integer i: collection) {
+                minOld = minOld != null && minOld < i? minOld: i;
+            }
+            minOld = minOld == null? 0 : minOld;
 
-Если с toArray все просто, можно либо вызвать toArray() получить Object[], либо toArray(T[]::new) — получив массив типа T, то collect позволяет много возможностей преобразовать значение в коллекцию, map'у или любой другой тип. Для этого используются статические методы из Collectors, например преобразование в List будет stream.collect(Collectors.toList()).
+            System.out.println("min = " + min+ " : " + minOld); // напечатает: min = 1 : 1
 
-Давайте рассмотрим статические методы из Collectors:
-Метод	Описание
-toList, toCollection, toSet	представляют стрим в виде списка, коллекции или множества
-toConcurrentMap, toMap	позволяют преобразовать стрим в map
-averagingInt, averagingDouble, averagingLong	возвращают среднее значение
-summingInt, summingDouble, summingLong	возвращает сумму
-summarizingInt, summarizingDouble, summarizingLong	возвращают SummaryStatistics с разными агрегатными значениями
-partitioningBy	разделяет коллекцию на две части по соответствию условию и возвращает их как Map<Boolean, List>
-groupingBy	разделяет коллекцию на несколько частей и возвращает Map<N, List<T>>
-mapping	дополнительные преобразования значений для сложных Collector'ов
+            // Вернуть последний элемент
+            Integer last = collection
+                    .stream()
+                    .reduce((s1, s2) -> s2)
+                    .orElse(0); // через stream Api
 
+            Integer lastOld = null; // по старому методу
+            for(Integer i: collection) {
+                lastOld = i;
+            }
+            lastOld = lastOld == null ? 0 : lastOld;
 
-Теперь давайте рассмотрим работу с collect и toArray на примерах:
-Условие: Дана коллекция чисел Arrays.asList(1, 2, 3, 4), рассмотрим работу collect и toArray с ней
-Задача	Код примера	Результат
-Получить сумму нечетных чисел	numbers.stream().collect(Collectors.summingInt(((p) -> p % 2 == 1? p: 0)))	4
-Вычесть от каждого элемента 1 и получить среднее	numbers.stream().collect(Collectors.averagingInt((p) -> p — 1))	1.5
-Прибавить к числам 3 и получить статистику	numbers.stream().collect(Collectors.summarizingInt((p) -> p + 3))	IntSummaryStatistics{count=4, sum=22, min=4, average=5.5, max=7}
-Разделить числа на четные и нечетные	numbers.stream().collect(Collectors.partitioningBy((p) -> p % 2 == 0))	{false=[1, 3], true=[2, 4]}
+            System.out.println("last = " + last + " : " + lastOld); // напечатает: last = 2 : 2
 
+            // Вернуть сумму чисел, которые больше 2
+            Integer sumMore2 = collection
+                    .stream()
+                    .filter(o -> o > 2)
+                    .reduce((s1, s2) -> s1 + s2)
+                    .orElse(0); // через stream Api
 
-Условие: Дана коллекция строк Arrays.asList(«a1», «b2», «c3», «a1»), рассмотрим работу collect и toArray с ней
-Задача	Код примера	Результат
-Получение списка без дубликатов	strings.stream().distinct().collect(Collectors.toList())	[a1, b2, c3]
-Получить массив строк без дубликатов и в верхнем регистре	strings.stream().distinct().map(String::toUpperCase).toArray(String[]::new)	{A1, B2, C3}
-Объединить все элементы в одну строку через разделитель: и обернуть тегами <b>… </b>	strings.stream().collect(Collectors.joining(": ", "<b> ", " </b>"))	<b> a1: b2: c3: a1 </b>
-Преобразовать в map, где первый символ ключ, второй символ значение	strings.stream().distinct().collect(Collectors.toMap((p) -> p.substring(0, 1), (p) -> p.substring(1, 2)))	{a=1, b=2, c=3}
-Преобразовать в map, сгруппировав по первому символу строки	strings.stream().collect(Collectors.groupingBy((p) -> p.substring(0, 1)))	{a=[a1, a1], b=[b2], c=[c3]}
-Преобразовать в map, сгруппировав по первому символу строки и объединим вторые символы через :	strings.stream().collect(Collectors.groupingBy((p) -> p.substring(0, 1), Collectors.mapping((p) -> p.substring(1, 2), Collectors.joining(":"))))	{a=1:1, b=2, c=3}
+            Integer sumMore2Old = 0; // по старому методу
+            for(Integer i: collection) {
+                if(i > 2) {
+                    sumMore2Old += i;
+                }
+            }
 
+            System.out.println("sumMore2 = " + sumMore2 + " : " + sumMore2Old); // напечатает: sumMore2 = 7 : 7
 
-Детальные примеры
+            // Вернуть сумму нечетных чисел
+            Integer sumOdd = collection
+                    .stream()
+                    .filter(o -> o % 2 != 0)
+                    .reduce((s1, s2) -> s1 + s2)
+                    .orElse(0); // через stream Api
 
+            Integer sumOddOld = 0; // по старому методу
+            for(Integer i: collection) {
+                if(i % 2 != 0) {
+                    sumOddOld += i;
+                }
+            }
 
+            System.out.println("sumOdd = " + sumOdd + " : " + sumOddOld); // напечатает: sumOdd = 4 : 4
 
+            // ************ Работа со сложными объектами
 
-3.10 Пример создания собственного Collector'a
+            // Зададим коллекцию людей
+            Collection<People> peoples = Arrays.asList(
+                    new People("Вася", 16, Sex.MAN),
+                    new People("Петя", 23, Sex.MAN),
+                    new People("Елена", 42, Sex.WOMEN),
+                    new People("Иван Иванович", 69, Sex.MAN)
+            );
 
-Кроме Collector'ов уже определенных в Collectors можно так же создать собственный Collector, Давайте рассмотрим пример как его можно создать.
+            // Найдем самого старшего мужчину
+            int oldMan = peoples
+                    .stream()
+                    .filter((p) -> p.getSex() == Sex.MAN)
+                    .map(People::getAge)
+                    .reduce((s1, s2) -> s1 > s2 ? s1 : s2)
+                    .get();
 
-Метод определения пользовательского Collector'a:
+            System.out.println("oldMan = " + oldMan); // напечатает: oldMan = 69
 
-Collector<Тип_источника, Тип_аккумулятора, Тип_результата> сollector =  Collector.of(
-                метод_инициализации_аккумулятора,
-                метод_обработки_каждого_элемента,
-                метод_соединения_двух_аккумуляторов,
-                [метод_последней_обработки_аккумулятора]
-        );
+            // Найдем самого минимальный возраст человека у которого есть буква е в имени
+            int younger = peoples
+                    .stream()
+                    .filter((p) -> p.getName().contains("е"))
+                    .mapToInt(People::getAge)
+                    .reduce((s1, s2) -> s1 < s2 ? s1 : s2)
+                    .orElse(0);
+            System.out.println("younger = " + younger); // напечатает: younger = 23
+        }
 
+        private enum Sex {
+            MAN,
+            WOMEN
+        }
 
-Как видно из кода выше, для реализации своего Collector'a нужно определить три или четыре метода (метод_последней_обработки_аккумулятора не обязателен). Рассмотрим следующий кода, который мы писали до Java 8, чтобы объединить все строки коллекции:
+        private static class People {
+            private final String name;
+            private final Integer age;
+            private final Sex sex;
 
+            public People(String name, Integer age, Sex sex) {
+                this.name = name;
+                this.age = age;
+                this.sex = sex;
+            }
+
+            public String getName() {return name;}
+            public Integer getAge() {return age;}
+            public Sex getSex() {return sex;}
+
+            @Override
+            public String toString() {
+                return "{" +
+                        "name='" + name + '\'' +
+                        ", age=" + age +
+                        ", sex=" + sex +
+                        '}';
+            }
+
+            @Override
+            public boolean equals(Object o) {
+                if (this == o) return true;
+                if (!(o instanceof People)) return false;
+                People people = (People) o;
+                return Objects.equals(name, people.name) &&
+                        Objects.equals(age, people.age) &&
+                        Objects.equals(sex, people.sex);
+            }
+
+            @Override
+            public int hashCode() {
+                return Objects.hash(name, age, sex);
+            }
+        }
+
+        public static void main(String[] args) {
+            testReduce();
+        }
+    }
+    /*
+
+    3.9 Примеры использования toArray и collect функции#
+    Если с toArray все просто, можно либо вызвать toArray() получить Object[], либо toArray(T[]::new) — получив массив
+    типа T, то collect позволяет много возможностей преобразовать значение в коллекцию, map'у или любой другой тип.
+    Для этого используются статические методы из Collectors, например преобразование в List будет
+    stream.collect(Collectors.toList()).
+
+    Давайте рассмотрим статические методы из Collectors:
+        ---------------------------------------------------------------------------------------------------------------
+            Метод | Описание
+        ---------------------------------------------------------------------------------------------------------------
+            toList, toCollection, toSet	|
+                представляют стрим в виде списка, коллекции или множества
+        ---------------------------------------------------------------------------------------------------------------
+            toConcurrentMap, toMap |
+                позволяют преобразовать стрим в map
+        ---------------------------------------------------------------------------------------------------------------
+            averagingInt, averagingDouble, averagingLong |
+                возвращают среднее значение
+        ---------------------------------------------------------------------------------------------------------------
+            summingInt, summingDouble, summingLong |
+                возвращает сумму
+        ---------------------------------------------------------------------------------------------------------------
+            summarizingInt, summarizingDouble, summarizingLong |
+                возвращают SummaryStatistics с разными агрегатными значениями
+        ---------------------------------------------------------------------------------------------------------------
+            partitioningBy |
+                разделяет коллекцию на две части по соответствию условию и возвращает их как Map<Boolean, List>
+        ---------------------------------------------------------------------------------------------------------------
+            groupingBy |
+                разделяет коллекцию на несколько частей и возвращает Map<N, List<T>>
+        ---------------------------------------------------------------------------------------------------------------
+            mapping |
+                дополнительные преобразования значений для сложных Collector'ов
+        ---------------------------------------------------------------------------------------------------------------
+
+    Теперь давайте рассмотрим работу с collect и toArray на примерах:
+    Условие: Дана коллекция чисел Arrays.asList(1, 2, 3, 4), рассмотрим работу collect и toArray с ней
+        ---------------------------------------------------------------------------------------------------------------
+            Задача | Код примера // Результат
+        ---------------------------------------------------------------------------------------------------------------
+            Получить сумму нечетных чисел |
+            */
+            class Test137 {
+                public static void main(String[] args) {
+                    List<Integer> numbers = Arrays.asList(1, 2, 3, 4);
+                    Integer collect = numbers
+                            .stream()
+                            .collect(Collectors.summingInt(((p) -> p % 2 == 1 ? p : 0)));
+                    System.out.println(collect); // 4
+                }
+            }
+            /*
+        ---------------------------------------------------------------------------------------------------------------
+            Вычесть от каждого элемента 1 и получить среднее |
+            */
+            class Test138 {
+                public static void main(String[] args) {
+                    List<Integer> numbers = Arrays.asList(1, 2, 3, 4);
+                    Double collect = numbers
+                            .stream()
+                            .collect(Collectors.averagingInt((p) -> p - 1));
+                    System.out.println(collect); // 1.5
+                }
+            }
+            /*
+        ---------------------------------------------------------------------------------------------------------------
+            Прибавить к числам 3 и получить статистику |
+            */
+            class Test139 {
+                public static void main(String[] args) {
+                    List<Integer> numbers = Arrays.asList(1, 2, 3, 4);
+                    IntSummaryStatistics collect = numbers
+                            .stream()
+                            .collect(Collectors.summarizingInt((p) -> p + 3));
+                    System.out.println(collect); // IntSummaryStatistics{count=4, sum=22, min=4, average=5,500000, max=7}
+                }
+            }
+            /*
+        ---------------------------------------------------------------------------------------------------------------
+            Разделить числа на четные и нечетные |
+            */
+            class Test140 {
+                public static void main(String[] args) {
+                    List<Integer> numbers = Arrays.asList(1, 2, 3, 4);
+                    Map<Boolean, List<Integer>> collect = numbers
+                            .stream()
+                            .collect(Collectors.partitioningBy((p) -> p % 2 == 0));
+                    System.out.println(collect); // {false=[1, 3], true=[2, 4]}
+                }
+            }
+            /*
+        ---------------------------------------------------------------------------------------------------------------
+
+    Условие: Дана коллекция строк Arrays.asList(«a1», «b2», «c3», «a1»), рассмотрим работу collect и toArray с ней
+        ---------------------------------------------------------------------------------------------------------------
+            Задача | Код примера // Результат
+        ---------------------------------------------------------------------------------------------------------------
+            Получение списка без дубликатов |
+            */
+            class Test141 {
+                public static void main(String[] args) {
+                    List<String> strings = Arrays.asList("a1", "b2", "c3", "a1");
+                    List<String> collect = strings
+                            .stream()
+                            .distinct()
+                            .collect(Collectors.toList());
+                    System.out.println(collect); // [a1, b2, c3]
+                }
+            }
+            /*
+        ---------------------------------------------------------------------------------------------------------------
+            Получить массив строк без дубликатов и в верхнем регистре |
+            */
+            class Test142 {
+                public static void main(String[] args) {
+                    List<String> strings = Arrays.asList("a1", "b2", "c3", "a1");
+                    String[] strings1 = strings
+                            .stream()
+                            .distinct()
+                            .map(String::toUpperCase)
+                            .toArray(String[]::new);
+                    System.out.println(Arrays.toString(strings1)); // {A1, B2, C3}
+                }
+            }
+            /*
+        ---------------------------------------------------------------------------------------------------------------
+            Объединить все элементы в одну строку через разделитель: и обернуть тегами <b>… </b> |
+            */
+            class Test143 {
+                public static void main(String[] args) {
+                    List<String> strings = Arrays.asList("a1", "b2", "c3", "a1");
+                    String collect = strings
+                            .stream()
+                            .collect(Collectors.joining(": ", "<b> ", " </b>"));
+                    System.out.println(collect); // <b> a1: b2: c3: a1 </b>
+                }
+            }
+            /*
+        ---------------------------------------------------------------------------------------------------------------
+            Преобразовать в map, где первый символ ключ, второй символ значение |
+            */
+            class Test144 {
+                public static void main(String[] args) {
+                    List<String> strings = Arrays.asList("a1", "b2", "c3", "a1");
+                    Map<String, String> collect = strings
+                            .stream()
+                            .distinct()
+                            .collect(Collectors.toMap((p) -> p.substring(0, 1), (p) -> p.substring(1, 2)));
+                    System.out.println(collect); // {a=1, b=2, c=3}
+                }
+            }
+            /*
+        ---------------------------------------------------------------------------------------------------------------
+            Преобразовать в map, сгруппировав по первому символу строки |
+            */
+            class Test145 {
+                public static void main(String[] args) {
+                    List<String> strings = Arrays.asList("a1", "b2", "c3", "a1");
+                    Map<String, List<String>> collect = strings
+                            .stream()
+                            .collect(Collectors.groupingBy((p) -> p.substring(0, 1)));
+                    System.out.println(collect); // {a=[a1, a1], b=[b2], c=[c3]}
+                }
+            }
+            /*
+        ---------------------------------------------------------------------------------------------------------------
+            Преобразовать в map, сгруппировав по первому символу строки и объединим вторые символы через : |
+            */
+            class Test146 {
+                public static void main(String[] args) {
+                    List<String> strings = Arrays.asList("a1", "b2", "c3", "a1");
+                    Map<String, String> collect = strings
+                            .stream()
+                            .collect(Collectors.groupingBy((p) -> p.substring(0, 1), Collectors
+                                    .mapping((p) -> p.substring(1, 2), Collectors.joining(":"))));
+                    System.out.println(collect); // {a=1:1, b=2, c=3}
+                }
+            }
+            /*
+        ---------------------------------------------------------------------------------------------------------------
+
+    Детальные примеры#
+    Также примеры можно найти на github'e
+    https://github.com/Vedenin/java_in_examples/blob/master/stream_api/src/com/github/vedenin/rus/stream_api/CollectAndToArrayTests.java
+    */
+    class Test147 {
+        // Метод collect преобразует stream в коллекцию или другую структуру данных
+        // Полезные статические методы из Collectors:
+        // toList, toCollection, toSet - представляют стрим в вид списка, коллекции или множества
+        // toConcurrentMap, toMap - позволяют преобразовать стрим в map, используя указанные функции
+        // averagingInt, averagingDouble, averagingLong - возвращают среднее значение
+        // summingInt, summingDouble, summingLong - возвращает сумму
+        // summarizingInt, summarizingDouble, summarizingLong - возвращают SummaryStatistics с разными агрегатными значениями
+        // partitioningBy - разделяет коллекцию на две части по соответствию условию и возвращает их как Map<Boolean, List>
+        // groupingBy - разделить коллекцию по условию и вернуть Map<N, List<T>>, где T - тип последнего стрима, N - значение разделителя
+        // mapping - дополнительные преобразования значений для сложных Collector'ов
+        private static void testCollect() {
+            System.out.println();
+            System.out.println("Test distinct start");
+
+            // ******** Работа со строками
+            Collection<String> strings = Arrays.asList("a1", "b2", "c3", "a1");
+
+            // Получение списка из коллекции строк без дубликатов
+            List<String> distinct = strings
+                    .stream()
+                    .distinct()
+                    .collect(Collectors.toList());
+            System.out.println("distinct = " + distinct); // напечатает: distinct = [a1, b2, c3]
+
+            // Получение массива уникальных значений из коллекции строк
+            String[] array = strings
+                    .stream()
+                    .distinct()
+                    .map(String::toUpperCase)
+                    .toArray(String[]::new);
+            System.out.println("array = " + Arrays.asList(array)); // напечатает: array = [A1, B2, C3]
+
+            // Объединить все элементы в одну строку через разделитель : и обернуть тегами <b> ... </b>
+            String join = strings
+                    .stream()
+                    .collect(Collectors.joining(" : ", "<b> ", " </b>"));
+            System.out.println("join = " + join); // напечатает: join = <b> a1 : b2 : c3 : a1 </b>
+
+            // Преобразовать в map, где первый символ ключ, второй символ значение
+            Map<String, String> map = strings
+                    .stream()
+                    .distinct()
+                    .collect(Collectors.toMap((p) -> p.substring(0, 1), (p) -> p.substring(1, 2)));
+            System.out.println("map = " + map); // напечатает: map = {a=1, b=2, c=3}
+
+            // Преобразовать в map, сгруппировав по первому символу строки
+            Map<String, List<String>> groups = strings
+                    .stream()
+                    .collect(Collectors.groupingBy((p) -> p.substring(0, 1)));
+            System.out.println("groups = " + groups); // напечатает: groups = {a=[a1, a1], b=[b2], c=[c3]}
+
+            // Преобразовать в map, сгруппировав по первому символу строки и в качестве значения
+            // взять второй символ объединим через :
+            Map<String, String> groupJoin = strings
+                    .stream()
+                    .collect(Collectors.groupingBy((p) -> p.substring(0, 1), Collectors
+                            .mapping((p) -> p.substring(1, 2), Collectors.joining(":"))));
+            System.out.println("groupJoin = " + groupJoin); // напечатает: groupJoin = groupJoin = {a=1:1, b=2, c=3}
+
+            // ******** Работа с числами
+            Collection<Integer> numbers = Arrays.asList(1, 2, 3, 4);
+
+            // Получить сумму нечетных чисел
+            long sumOdd = numbers
+                    .stream()
+                    .collect(Collectors.summingInt(((p) -> p % 2 == 1 ? p : 0)));
+            System.out.println("sumOdd = " + sumOdd); // напечатает: sumOdd = 4
+
+            // Вычесть c каждого элемента 1 и получить среднее
+            double average = numbers
+                    .stream()
+                    .collect(Collectors.averagingInt((p) -> p - 1));
+            System.out.println("average = " + average); // напечатает: average = 1.5
+
+            // Прибавить к числам 3 и получить статистику
+            IntSummaryStatistics statistics = numbers
+                    .stream()
+                    .collect(Collectors.summarizingInt((p) -> p + 3));
+            System.out.println("statistics = " + statistics); // напечатает:
+            // statistics = IntSummaryStatistics{count=4, sum=22, min=4, average=5.500000, max=7}
+
+            // Получить сумму четных чисел через IntSummaryStatistics
+            long sumEven = numbers
+                    .stream()
+                    .collect(Collectors.summarizingInt((p) -> p % 2 == 0 ? p : 0))
+                    .getSum();
+            System.out.println("sumEven = " + sumEven); // напечатает: sumEven = 6
+
+            // Разделить числа на четные и нечетные
+            Map<Boolean, List<Integer>> parts = numbers
+                    .stream()
+                    .collect(Collectors.partitioningBy((p) -> p % 2 == 0));
+            System.out.println("parts = " + parts); // напечатает: parts = {false=[1, 3], true=[2, 4]}
+        }
+
+        public static void main(String[] args) {
+            testCollect();
+        }
+    }
+    /*
+
+    3.10 Пример создания собственного Collector'a#
+    Кроме Collector'ов уже определенных в Collectors можно так же создать собственный Collector, Давайте рассмотрим
+    пример как его можно создать. Метод определения пользовательского Collector'a:
+    --------------------
+        Collector<Тип_источника, Тип_аккумулятора, Тип_результата> сollector =  Collector.of(
+                        метод_инициализации_аккумулятора,
+                        метод_обработки_каждого_элемента,
+                        метод_соединения_двух_аккумуляторов,
+                        [метод_последней_обработки_аккумулятора]
+                );
+    --------------------
+
+    Как видно из кода выше, для реализации своего Collector'a нужно определить три или четыре метода
+    (метод_последней_обработки_аккумулятора не обязателен). Рассмотрим следующий кода, который мы писали до Java 8,
+    чтобы объединить все строки коллекции:
+    --------------------
         StringBuilder b = new StringBuilder(); // метод_инициализации_аккумулятора
         for(String s: strings) {
             b.append(s).append(" , "); // метод_обработки_каждого_элемента,
         }
         String joinBuilderOld = b.toString(); // метод_последней_обработки_аккумулятора
+    --------------------
 
+    И аналогичный код, который будет написан в Java 8
+    --------------------
+        String joinBuilder = strings.stream().collect(
+           Collector.of(
+                        StringBuilder::new, // метод_инициализации_аккумулятора
+                        (b ,s) -> b.append(s).append(" , "), // метод_обработки_каждого_элемента,
+                        (b1, b2) -> b1.append(b2).append(" , "), // метод_соединения_двух_аккумуляторов
+                        StringBuilder::toString // метод_последней_обработки_аккумулятора
+                )
+        );
+    --------------------
 
-И аналогичный код, который будет написан в Java 8
-
-String joinBuilder = strings.stream().collect(
-   Collector.of(
-                StringBuilder::new, // метод_инициализации_аккумулятора
-                (b ,s) -> b.append(s).append(" , "), // метод_обработки_каждого_элемента,
-                (b1, b2) -> b1.append(b2).append(" , "), // метод_соединения_двух_аккумуляторов
-                StringBuilder::toString // метод_последней_обработки_аккумулятора
-        )
-);
-
-
-В общем-то, три метода легко понять из кода выше, их мы писали практически при каждой обработки коллекций, но вот что такое метод_соединения_двух_аккумуляторов? Это метод который нужен для параллельной обработки Collector'a, в данном случае при параллельном стриме коллекция может быть разделенной на две части (или больше частей), в каждой из которых будет свой аккумулятор StringBuilder и потом необходимо будет их объединить, то код до Java 8 при 2 потоках будет таким:
-
+    В общем-то, три метода легко понять из кода выше, их мы писали практически при каждой обработки коллекций, но вот
+    что такое метод_соединения_двух_аккумуляторов? Это метод который нужен для параллельной обработки Collector'a,
+    в данном случае при параллельном стриме коллекция может быть разделенной на две части (или больше частей), в каждой
+    из которых будет свой аккумулятор StringBuilder и потом необходимо будет их объединить, то код до Java 8 при 2
+    потоках будет таким:
+    --------------------
         StringBuilder b1 = new StringBuilder(); // метод_инициализации_аккумулятора_1
         for(String s: stringsPart1) { //  stringsPart1 - первая часть коллекции strings
             b1.append(s).append(" , "); // метод_обработки_каждого_элемента,
@@ -2585,33 +3720,146 @@ String joinBuilder = strings.stream().collect(
         StringBuilder b = b1.append(b2).append(" , "), // метод_соединения_двух_аккумуляторов
 
         String joinBuilderOld = b.toString(); // метод_последней_обработки_аккумулятора
+    --------------------
 
-
-Напишем свой аналог Collectors.toList() для работы со строковым стримом:
- // Напишем свой аналог toList
+    Напишем свой аналог Collectors.toList() для работы со строковым стримом:
+        // Напишем свой аналог toList
         Collector<String, List<String>, List<String>> toList = Collector.of(
                 ArrayList::new, // метод инициализации аккумулятора
                 List::add, // метод обработки каждого элемента
                 (l1, l2) -> { l1.addAll(l2); return l1; } // метод соединения двух аккумуляторов при параллельном выполнении
         );
-// Используем его для получение списка строк без дубликатов из стрима
+
+        // Используем его для получение списка строк без дубликатов из стрима
         List<String> distinct1 = strings.stream().distinct().collect(toList);
 
+    Детальные примеры#
+    Так же примеры можно найти на github'e
+    https://github.com/Vedenin/java_in_examples/blob/master/stream_api/src/com/github/vedenin/rus/stream_api/CollectAndToArrayTests.java
+    */
+    class Test148 {
+        // Метод collect преобразует stream в коллекцию или другую структуру данных
+        // Полезные статические методы из Collectors:
+        // toList, toCollection, toSet - представляют стрим в виде списка, коллекции или множества
+        // toConcurrentMap, toMap - позволяют преобразовать стрим в map, используя указанные функции
+        // averagingInt, averagingDouble, averagingLong - возвращают среднее значение
+        // summingInt, summingDouble, summingLong - возвращает сумму
+        // summarizingInt, summarizingDouble, summarizingLong - возвращают SummaryStatistics с разными агрегатными значениями
+        // partitioningBy - разделяет коллекцию на две части по соотвествию условию и возвращает их как Map<Boolean, List>
+        // groupingBy - разделить коллекцию по условию и вернуть Map<N, List<T>>, где T - тип последнего стрима, N - значение разделителя
+        // mapping - дополнительные преобразования значений для сложных Collector'ов
+        private static void testCollect() {
+            System.out.println();
+            System.out.println("Test distinct start");
 
-Детальные примеры
+            // ******** Работа с числами
+            Collection<Integer> numbers = Arrays.asList(1, 2, 3, 4);
 
+            // Получить сумму нечетных чисел
+            long sumOdd = numbers
+                    .stream()
+                    .collect(Collectors.summingInt(((p) -> p % 2 == 1 ? p : 0)));
+            System.out.println("sumOdd = " + sumOdd); // напечатает: sumOdd = 4
 
+            // Вычисть c каждого элемента 1 и получить среднее
+            double average = numbers
+                    .stream()
+                    .collect(Collectors.averagingInt((p) -> p - 1));
+            System.out.println("average = " + average); // напечатает: average = 1.5
 
-IV. Заключение
+            // Прибавить к числам 3 и получить статистику
+            IntSummaryStatistics statistics = numbers
+                    .stream()
+                    .collect(Collectors.summarizingInt((p) -> p + 3));
+            System.out.println("statistics = " + statistics); // напечатает:
+            // statistics = IntSummaryStatistics{count=4, sum=22, min=4, average=5.500000, max=7}
 
-Вот и все. Надеюсь, моя небольшая шпаргалка по работе со stream api была для вас полезной. Все исходники есть на github'е, удачи в написании хорошего кода.
+            // Получить сумму четных чисел через IntSummaryStatistics
+            long sumEven = numbers
+                    .stream()
+                    .collect(Collectors.summarizingInt((p) -> p % 2 == 0 ? p : 0))
+                    .getSum();
+            System.out.println("sumEven = " + sumEven); // напечатает: sumEven = 6
 
-P.S. Список других статей, где можно прочитать дополнительно про Stream Api:
-1. Processing Data with Java SE 8 Streams, Part 1 от Oracle,
-2. Processing Data with Java SE 8 Streams, Part 2 от Oracle,
-3. Полное руководство по Java 8 Stream
+            // Разделить числа на четные и нечетные
+            Map<Boolean, List<Integer>> parts = numbers
+                    .stream()
+                    .collect(Collectors.partitioningBy((p) -> p % 2 == 0));
+            System.out.println("parts = " + parts); // напечатает: parts = {false=[1, 3], true=[2, 4]}
 
-P.P.S. Так же советую посмотреть мой opensource проект useful-java-links — возможно, наиболее полная коллекция полезных Java библиотек, фреймворков и русскоязычного обучающего видео. Так же есть аналогичная английская версия этого проекта и начинаю opensource подпроект Hello world по подготовке коллекции простых примеров для разных Java библиотек в одном maven проекте (буду благодарен за любую помощь).
+            // ******** Работа со строками
+            Collection<String> strings = Arrays.asList("a1", "b2", "c3", "a1");
 
-Общее оглавление 'Шпаргалок'
+            // Получение списка из коллекции строк без дубликатов
+            List<String> distinct = strings
+                    .stream()
+                    .distinct()
+                    .collect(Collectors.toList());
+            System.out.println("distinct = " + distinct); // напечатает: distinct = [a1, b2, c3]
+
+            // Получение массива уникальных значений из коллекции строк
+            String[] array = strings
+                    .stream()
+                    .distinct()
+                    .map(String::toUpperCase)
+                    .toArray(String[]::new);
+            System.out.println("array = " + Arrays.asList(array)); // напечатает: array = [A1, B2, C3]
+
+            // Объединить все элементы в одну строку через разделитель : и обернуть тегами <b> ... </b>
+            String join = strings
+                    .stream()
+                    .collect(Collectors.joining(" : ", "<b> ", " </b>"));
+            System.out.println("join = " + join); // напечатает: join = <b> a1 : b2 : c3 : a1 </b>
+
+            // Преобразовать в map, где первый символ ключ, второй символ значение
+            Map<String, String> map = strings
+                    .stream()
+                    .distinct()
+                    .collect(Collectors.toMap((p) -> p.substring(0, 1), (p) -> p.substring(1, 2)));
+            System.out.println("map = " + map); // напечатает: map = {a=1, b=2, c=3}
+
+            // Преобразовать в map, сгруппировав по первому символу строки
+            Map<String, List<String>> groups = strings
+                    .stream()
+                    .collect(Collectors.groupingBy((p) -> p.substring(0, 1)));
+            System.out.println("groups = " + groups); // напечатает: groups = {a=[a1, a1], b=[b2], c=[c3]}
+
+            // Преобразовать в map, сгруппировав по первому символу строки и в качестве значения взять второй символ
+            // объединим через :
+            Map<String, String> groupJoin = strings
+                    .stream()
+                    .collect(Collectors.groupingBy((p) -> p.substring(0, 1), Collectors
+                            .mapping((p) -> p.substring(1, 2), Collectors.joining(":"))));
+            System.out.println("groupJoin = " + groupJoin); // напечатает: groupJoin = groupJoin = {a=1:1, b=2, c=3}
+
+            // Напишем собственный Collector, который будет выполнять объединение строк с помощью StringBuilder
+            Collector<String,StringBuilder, String> stringBuilderCollector =  Collector.of(
+                    StringBuilder::new, // метод инициализации аккумулятора
+                    (b ,s) -> b.append(s).append(" , "), // метод обработки каждого элемента
+                    (b1, b2) -> b1.append(b2).append(" , "), // метод соединения двух аккумуляторов при параллельном выполнении
+                    StringBuilder::toString // метод выполняющийся в самом конце
+            );
+            String joinBuilder = strings
+                    .stream()
+                    .collect(stringBuilderCollector);
+            System.out.println("joinBuilder = " + joinBuilder); // напечатает: joinBuilder = a1 , b2 , c3 , a1 ,
+
+            // Аналог Collector'а выше стилем JDK7 и ниже
+            StringBuilder b = new StringBuilder(); // метод инициализации аккумулятора
+            for(String s: strings) {
+                b.append(s).append(" , "); // метод обработки каждого элемента
+            }
+            String joinBuilderOld = b.toString(); // метод выполняющийся в самом конце
+            System.out.println("joinBuilderOld = " + joinBuilderOld); // напечатает: joinBuilderOld = a1 , b2 , c3 , a1 ,
+        }
+
+        public static void main(String[] args) throws Exception {
+            testCollect();
+        }
+    }
+    /*
+
+    IV. Заключение#
+    Вот и все. Надеюсь, моя небольшая шпаргалка по работе со stream api была для вас полезной. Все исходники есть
+    на github'е, удачи в написании хорошего кода.
  */
